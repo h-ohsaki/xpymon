@@ -148,6 +148,8 @@ class Monitor():
             self.last_iface = iface
             self.tx_bytes = self.rx_bytes = 0
             self.tx_rates = self.rx_rates = None
+        if iface is not None and addr is None:
+            addr = ''
         return iface, addr
 
     def wifi_status(self, iface):
