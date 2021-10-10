@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # A versatile WiFi/network/battery/CPU/video system monitor on Linux.
-# Copyright (c) 2018-2019, Hiroyuki Ohsaki.
+# Copyright (c) 2018-2021, Hiroyuki Ohsaki.
 # All rights reserved.
 #
 
@@ -81,7 +81,10 @@ def extract_from_stream(stream, column=0, regexp=None, atype=str):
 def extract_field_from_file(file, column=0, regexp=None, atype=str):
     try:
         f = open(file)
-        return extract_from_stream(f, column=column, regexp=regexp, atype=atype)
+        return extract_from_stream(f,
+                                   column=column,
+                                   regexp=regexp,
+                                   atype=atype)
     except FileNotFoundError:
         return None
     except OSError:
@@ -117,6 +120,34 @@ def parse_cmd_output(args, patterns=None, ignore=None):
     return parse_stream(f, patterns=patterns, ignore=ignore)
 
 # ----------------------------------------------------------------
+# The following code is taken from
+# https://code.activestate.com/recipes/325905-memoize-decorator-with-timeout/
+class MemorizeWithTime(object):
+    _caches = {}
+    _timeouts = {}
+
+    def __init__(self, timeout=1):
+        self.timeout = timeout
+
+    def __call__(self, f):
+        self.cache = self._caches[f] = {}
+        self._timeouts[f] = self.timeout
+
+        def func(*args, **kwargs):
+            kw = sorted(kwargs.items())
+            key = (args, tuple(kw))
+            try:
+                v = self.cache[key]
+                if (time.time() - v[1]) > self.timeout:
+                    raise KeyError
+            except KeyError:
+                v = self.cache[key] = f(*args, **kwargs), time.time()
+            return v[0]
+
+        func.func_name = f.__name__
+        return func
+
+# ----------------------------------------------------------------
 class Monitor():
     def __init__(self):
         self.last_time = time.time()
@@ -146,9 +177,10 @@ class Monitor():
         IP address."""
         patterns = [[r'^\d+: *(\S+)', 1, str], [r'inet ([0-9.]+)', 1, str]]
         # exclude loopback inteface and bridges
-        iface, addr = parse_cmd_output(['/bin/ip', '-oneline', 'addr'],
-                                       patterns,
-                                       ignore=r'(127.0.0.1|::1/128|\bbr[\d-]|docker\d|veth)')
+        iface, addr = parse_cmd_output(
+            ['/bin/ip', '-oneline', 'addr'],
+            patterns,
+            ignore=r'(127.0.0.1|::1/128|\bbr[\d-]|docker\d|veth)')
         # reset statistics when interface is changed
         if iface and iface != self.last_iface:
             self.last_iface = iface
@@ -176,7 +208,6 @@ class Monitor():
     def net_status(self, iface):
         """Return the current TX and RX speeds going through the network
         interface IFACE."""
-
         def exponential_moving_average(currnet, last, alpha=.95):
             if last is None:
                 return 0
@@ -253,6 +284,7 @@ class Monitor():
         matches = parse_cmd_output(['zdump', TIMEZONE_FILE], patterns)
         return clock, matches[0]
 
+    @MemorizeWithTime(3)
     def compose_wifi_status(self, iface, addr):
         essid, ap, rate, quality, level, supplicant = self.wifi_status(iface)
         if not essid:
@@ -269,6 +301,7 @@ class Monitor():
         return '{:5}{} {:8} {} {:4.1f}M {:5} {:5.1f}dBm'.format(
             iface, supp_mark, essid, ap, rate, quality, level)
 
+    @MemorizeWithTime(3)
     def compose_net_status(self, iface, addr):
         # IP address might be not assigned yet
         if addr is None:
@@ -279,6 +312,7 @@ class Monitor():
         return '{:5} {:15} TX{:5.2f}{} RX{:5.2f}{}'.format(
             iface, addr, tx_base, tx_unit, rx_base, rx_unit)
 
+    @MemorizeWithTime(3)
     def compose_power_status(self):
         ac_online, remain_ratio, remain_secs, consumption = self.battery_status(
         )
@@ -288,6 +322,7 @@ class Monitor():
         return 'PW{}{:3d}% {:02d}:{:02d} {:5.2f}W'.format(
             ac_mark, ratio, hh, mm, consumption)
 
+    @MemorizeWithTime(3)
     def compose_cpu_status(self):
         loadavg, cpufreq = self.cpu_status()
         if cpufreq is None:
@@ -296,6 +331,7 @@ class Monitor():
         freq = cpufreq / 1000
         return 'CPU{:3d}% {:3.1f}GHz'.format(load, freq)
 
+    @MemorizeWithTime(5)
     def compose_video_status(self):
         dev, width, height, recording = self.video_status()
         if dev is None:
