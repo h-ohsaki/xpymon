@@ -362,6 +362,7 @@ class Monitor():
         stats.append(self.compose_clock_string())
         return ' | '.join(stats)
 
+    @MemorizeWithTime(5)
     def should_hide(self, width, height):
         """Return True if the status monitor should not be displayed because,
         for instance, a full-screen application is running."""
