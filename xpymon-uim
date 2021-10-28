@@ -165,8 +165,15 @@ class Monitor():
         def _uim_monitor():
             sk = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             uid = os.getuid()
-            sk.connect(f'/run/user/{uid}/uim/socket/uim-helper')
             while True:
+                # Block until uim-helper is available.
+                try:
+                    sk.connect(f'/run/user/{uid}/uim/socket/uim-helper')
+                    break
+                except:
+                    time.sleep(1.)
+            while True:
+                # Slurp messages from uim-helper.
                 buf = sk.recv(4096)
                 for line in buf.decode().splitlines():
                     line = line.rstrip()
