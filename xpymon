@@ -191,8 +191,8 @@ class Monitor():
     def wifi_status(self, iface):
         """Check the current WiFI setting of the interface IFACE using
         iwconfig command.  Return ESSID, MAC address of the access point,
-        bitrate, link quality, signal
-        leveli, and flag indicating whether wpa_supplicant is running."""
+        bitrate, link quality, signal level, and flag indicating whether
+        wpa_supplicant is running."""
         patterns = [[r'ESSID:"(.+?)"', 1, str],
                     [r'Access Point: ([\dA-Fa-f:]+)', 1, str],
                     [r'Bit Rate=([\d.]+)', 1, float],
@@ -298,8 +298,8 @@ class Monitor():
         if not level:
             level = 0
         supp_mark = '*' if supplicant else ' '
-        return '{:5}{} {:8} {} {:4.1f}M {:5} {:5.1f}dBm'.format(
-            iface, supp_mark, essid, ap, rate, quality, level)
+        return '{:5}{} {:8} {:4.1f}M {:5} {:5.1f}dBm'.format(
+            iface, supp_mark, essid, rate, quality, level)
 
     @MemorizeWithTime(3)
     def compose_net_status(self, iface, addr):
