@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # A versatile WiFi/network/battery/CPU/video system monitor on Linux.
-# Copyright (c) 2018-2021, Hiroyuki Ohsaki.
+# Copyright (c) 2018-2023, Hiroyuki Ohsaki.
 # All rights reserved.
 #
 
@@ -47,10 +47,10 @@ THERMAL_ZONE = 0
 MONITOR_UIM = False
 
 def usage():
-    die("""\
-usage: {} [-T] [file...]
+    die(f"""\
+usage: {sys.argv[0]} [-T] [file...]
   -T    test mode
-""".format(sys.argv[0]))
+""")
 
 def second_to_hour_minute(second):
     """Convert SECONDS to hours and minutes."""
@@ -247,8 +247,7 @@ class Monitor():
         for battery in ['BAT0']:
             dir_ = '/sys/class/power_supply/' + battery
             for key in v.keys():
-                n = extract_field_from_file('{}/{}'.format(dir_, key),
-                                            atype=int)
+                n = extract_field_from_file(f'{dir_}/{key}', atype=int)
                 if n:
                     v[key] += n
         remain_ratio = v['energy_now'] / max(v['energy_full'], 1e-10)
@@ -308,8 +307,7 @@ class Monitor():
         if not level:
             level = 0
         supp_mark = '*' if supplicant else ' '
-        return '{:5}{} {:8} {:4.1f}M {:5} {:5.1f}dBm'.format(
-            iface, supp_mark, essid, rate, quality, level)
+        return f'{iface:5}{supp_mark} {essid:8} {rate:4.1f}M {quality:5} {level:5.1f}dBm'
 
     @MemorizeWithTime(3)
     def compose_net_status(self, iface, addr):
@@ -319,8 +317,7 @@ class Monitor():
         tx_rate, rx_rate = self.net_status(iface)
         tx_base, tx_unit = convert_to_si_unit(tx_rate)
         rx_base, rx_unit = convert_to_si_unit(rx_rate)
-        return '{:5} {:15} TX{:5.2f}{} RX{:5.2f}{}'.format(
-            iface, addr, tx_base, tx_unit, rx_base, rx_unit)
+        return f'{iface:5} {addr:15} TX{tx_base:5.2f}{tx_unit} RX{rx_base:5.2f}{rx_unit}'
 
     @MemorizeWithTime(3)
     def compose_power_status(self):
@@ -329,8 +326,7 @@ class Monitor():
         ac_mark = '*' if ac_online else ' '
         ratio = int(remain_ratio * 100)
         hh, mm = second_to_hour_minute(remain_secs)
-        return 'PW{}{:3d}% {:02d}:{:02d} {:5.2f}W'.format(
-            ac_mark, ratio, hh, mm, consumption)
+        return f'PW{ac_mark}{ratio:3d}% {hh:02d}:{mm:02d} {consumption:5.2f}W'
 
     @MemorizeWithTime(3)
     def compose_cpu_status(self):
@@ -339,7 +335,7 @@ class Monitor():
             cpufreq = 1000
         load = int(loadavg * 100)
         freq = cpufreq / 1000
-        return 'CPU{:3d}% {:3.1f}GHz {:2d}C'.format(load, freq, temp)
+        return f'CPU{load:3d}% {freq:3.1f}GHz {temp:2d}C'
 
     @MemorizeWithTime(5)
     def compose_video_status(self):
@@ -351,11 +347,11 @@ class Monitor():
         if height is None:
             height = 0
         rec_mark = '*' if recording else ' '
-        return '{}{} {}x{}'.format(dev, rec_mark, width, height)
+        return f'{dev}{rec_mark} {width}x{height}'
 
     def compose_clock_string(self):
         clock, second_clock = self.time_string()
-        return '[{}] {}'.format(second_clock, clock)
+        return f'[{second_clock}] {clock}'
 
     def status_string(self, cols=80):
         """Return a summary string describing wifi, network, power, CPU, and
@@ -432,7 +428,8 @@ def load_rcfile():
     (~/.xpymonrc) if it exists.  The RC script is any (valid) Python script,
     which is loaded after defining all global vaiables.  So, you can freely
     overrwite those definitions."""
-    rc_file = '{}/.xpymonrc'.format(os.getenv('HOME'))
+    home = os.getenv('HOME')
+    rc_file = f'{home}/.xpymonrc'
     try:
         with open(rc_file) as f:
             code = f.read()
@@ -441,7 +438,7 @@ def load_rcfile():
     try:
         exec(code)
     except:
-        die("executing '{}' failed.  aborting...".format(rc_file))
+        die(f"executing '{rc_file}' failed.  aborting...")
         exit()
 
 def main_loop(disp, screen, window, width, gcs, monitor):
