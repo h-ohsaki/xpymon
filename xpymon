@@ -383,7 +383,7 @@ class Monitor():
                     return True
         return False
 
-    def start_uim_monitor():
+    def start_uim_monitor(self):
         def _uim_monitor():
             sk = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             uid = os.getuid()
