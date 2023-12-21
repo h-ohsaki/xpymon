@@ -43,6 +43,7 @@ COLOR_TBL = (
 UPDATE_INTERVAL = 1.
 BATTERY_WARN_THRESH = .05
 TIMEZONE_FILE = '/usr/share/zoneinfo/Europe/Brussels'
+THERMAL_ZONE = 0
 MONITOR_UIM = False
 
 def usage():
@@ -265,7 +266,10 @@ class Monitor():
                                           column=3,
                                           regexp=r'MHz',
                                           atype=float)
-        return loadavg, cpufreq
+        temp = extract_field_from_file(
+            f'/sys/class/thermal/thermal_zone{THERMAL_ZONE}/temp',
+            atype=int) // 1000
+        return loadavg, cpufreq, temp
 
     def video_status(self):
         """Return the primary video output device, the width and the height of
@@ -330,12 +334,12 @@ class Monitor():
 
     @MemorizeWithTime(3)
     def compose_cpu_status(self):
-        loadavg, cpufreq = self.cpu_status()
+        loadavg, cpufreq, temp = self.cpu_status()
         if cpufreq is None:
             cpufreq = 1000
         load = int(loadavg * 100)
         freq = cpufreq / 1000
-        return 'CPU{:3d}% {:3.1f}GHz'.format(load, freq)
+        return 'CPU{:3d}% {:3.1f}GHz {:2d}C'.format(load, freq, temp)
 
     @MemorizeWithTime(5)
     def compose_video_status(self):
@@ -404,6 +408,7 @@ class Monitor():
                         stat = v[1]
                         if stat != 'skk' and stat != 'ja_romaji':
                             self.uim_stat = stat
+
         self.uim_monitor = threading.Thread(target=_uim_monitor, daemon=True)
         self.uim_monitor.start()
 
