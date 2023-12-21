@@ -24,6 +24,8 @@ import re
 import subprocess
 import sys
 import time
+import threading
+import socket
 
 from Xlib import X, display
 from perlcompat import die, getopts
@@ -41,6 +43,7 @@ COLOR_TBL = (
 UPDATE_INTERVAL = 1.
 BATTERY_WARN_THRESH = .05
 TIMEZONE_FILE = '/usr/share/zoneinfo/Europe/Brussels'
+MONITOR_UIM = False
 
 def usage():
     die("""\
@@ -158,6 +161,9 @@ class Monitor():
         self.rx_rate = None
         self.ac_online = True
         self.remain_ratio = 0
+        self.uim_stat = ''
+        if MONITOR_UIM:
+            self.uim_monitor = self.start_uim_monitor()
 
     def color(self):
         """Return color name according to the AC power availablility and the
@@ -377,6 +383,30 @@ class Monitor():
                     return True
         return False
 
+    def start_uim_monitor():
+        def _uim_monitor():
+            sk = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            uid = os.getuid()
+            while True:
+                # Block until uim-helper is available.
+                try:
+                    sk.connect(f'/run/user/{uid}/uim/socket/uim-helper')
+                    break
+                except:
+                    time.sleep(1.)
+            while True:
+                # Slurp messages from uim-helper.
+                buf = sk.recv(4096)
+                for line in buf.decode().splitlines():
+                    line = line.rstrip()
+                    if line.endswith('*'):
+                        v = line.split('\t')
+                        stat = v[1]
+                        if stat != 'skk' and stat != 'ja_romaji':
+                            self.uim_stat = stat
+        self.uim_monitor = threading.Thread(target=_uim_monitor, daemon=True)
+        self.uim_monitor.start()
+
 def do_tests():
     mon = Monitor()
     iface, addr = mon.detect_iface()
@@ -425,6 +455,11 @@ def main_loop(disp, screen, window, width, gcs, monitor):
         color, is_blink = monitor.color()
         if is_blink:
             reverse = not reverse
+        if monitor.uim_stat == 'ja_hiragana':
+            reverse = True
+        else:
+            reverse = False
+
         x11util.clear(window)
         x11util.draw_str(disp,
                          screen,
