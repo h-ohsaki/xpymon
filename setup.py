@@ -20,7 +20,7 @@ setuptools.setup(
     url='https://github.com/h-ohsaki/xpymon.git',
     packages=setuptools.find_packages(),
     install_requires = ['Xlib', 'perlcompat', 'x11util'],
-    scripts=['xpymon', 'xpymon-uim'],
+    scripts=['xpymon'],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
