@@ -100,7 +100,7 @@ def extract_field_from_cmd(args, column=0, regexp=None, atype=str):
     return extract_from_stream(f, column=column, regexp=regexp, atype=atype)
 
 def parse_stream(stream, patterns=None, ignore=None):
-    matches = [None] * len(patterns)
+    matches = [atype() for regexp, n, atype in patterns]
     for line in stream:
         line = line.rstrip()
         if ignore is not None and re.search(ignore, line):
