@@ -198,14 +198,14 @@ class Monitor():
     def wifi_status(self, iface):
         """Check the current WiFI setting of the interface IFACE using
         iwconfig command.  Return ESSID, MAC address of the access point,
-        bitrate, link quality, signal level, and flag indicating whether
+        RX and TX bitrates, signal level, and flag indicating whether
         wpa_supplicant is running."""
-        patterns = [[r'ESSID:"(.+?)"', 1, str],
-                    [r'Access Point: ([\dA-Fa-f:]+)', 1, str],
-                    [r'Bit Rate=([\d.]+)', 1, float],
-                    [r'Link Quality=(\S+)', 1, str],
-                    [r'Signal level=(\S+)', 1, float]]
-        matches = parse_cmd_output(['/sbin/iwconfig', iface], patterns)
+        patterns = [[r'SSID: (.+)', 1, str],
+                    [r'Connected to ([\dA-Fa-f:]+)', 1, str],
+                    [r'rx bitrate: ([\d.]+)', 1, float],
+                    [r'tx bitrate: ([\d.]+)', 1, float],
+                    [r'signal: (\S+)', 1, float]]
+        matches = parse_cmd_output(['/usr/sbin/iw', iface, 'link'], patterns)
 
         # check if WiFi supplicant is running
         code, output = subprocess.getstatusoutput('pidof wpa_supplicant')
@@ -289,26 +289,26 @@ class Monitor():
         """Return two strings representing the local time and the time in
         another time zone."""
         clock = time.strftime('%Y/%m/%d(%a) %H:%M:%S')
-        patterns = [['(\d\d:\d\d:\d\d)', 1, str]]
+        patterns = [[r'(\d\d:\d\d:\d\d)', 1, str]]
         # FIXME: avoid hard-coding
         matches = parse_cmd_output(['zdump', TIMEZONE_FILE], patterns)
         return clock, matches[0]
 
     @MemorizeWithTime(3)
     def compose_wifi_status(self, iface, addr):
-        essid, ap, rate, quality, level, supplicant = self.wifi_status(iface)
+        essid, ap, rx_rate, tx_rate, level, supplicant = self.wifi_status(iface)
         if not essid:
             essid = '--------'
         if not ap:
             ap = '--:--:--:--:--'
-        if not rate:
-            rate = 0
-        if not quality:
-            quality = '--/--'
+        if not rx_rate:
+            rx_rate = 0
+        if not tx_rate:
+            tx_rate = 0
         if not level:
             level = 0
         supp_mark = '*' if supplicant else ' '
-        return f'{iface:5}{supp_mark} {essid:8} {rate:4.1f}M {quality:5} {level:5.1f}dBm'
+        return f'{iface:5}{supp_mark} {essid:8} TX{tx_rate:4.1f}M RX{rx_rate:4.1f}M {level:5.1f}dBm'
 
     @MemorizeWithTime(3)
     def compose_net_status(self, iface, addr):
