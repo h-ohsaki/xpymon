@@ -63,4 +63,4 @@ xpywm(1), ip(8), iwconfig(8), ifconfig(8), xrandr(1), zdump(8), proc(5)
 
 # AUTHOR
 
-Hiroyuki Ohsaki <ohsaki[atmark]lsnl.jp>
+Hiroyuki Ohsaki <code[atmark]lsnl.jp>
