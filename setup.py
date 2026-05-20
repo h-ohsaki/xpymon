@@ -11,9 +11,9 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='xpymon',
-    version='1.30',
+    version='1.31',
     author='Hiroyuki Ohsaki',
-    author_email='ohsaki@lsnl.jp',
+    author_email='code@lsnl.jp',
     description='A versatile WiFi/network/battery/CPU/video system monitor on Linux',
     long_description=long_description,
     long_description_content_type='text/markdown',
