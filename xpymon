@@ -447,9 +447,11 @@ def main_loop(disp, screen, window, width, gcs, monitor):
     last_display = time.time()
     reverse = False
     while True:
-        elapsed = time.time() - last_display
+        now = time.time()
+        elapsed = now - last_display
         if elapsed < UPDATE_INTERVAL:
             time.sleep(UPDATE_INTERVAL - elapsed)
+        last_display = time.time()
         if monitor.should_hide(screen.width_in_pixels,
                                screen.height_in_pixels):
             continue
@@ -475,7 +477,6 @@ def main_loop(disp, screen, window, width, gcs, monitor):
                          reverse=reverse)
         x11util.flush(disp, screen)
         window.configure(stack_mode=X.Above)
-        last_display = time.time()
 
 def main():
     opt = getopts('T') or usage()
