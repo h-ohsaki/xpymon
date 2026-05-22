@@ -11,7 +11,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='xpymon',
-    version='1.31',
+    version='1.32',
     author='Hiroyuki Ohsaki',
     author_email='code@lsnl.jp',
     description='A versatile WiFi/network/battery/CPU/video system monitor on Linux',
@@ -21,9 +21,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires = ['Xlib', 'perlcompat', 'x11util'],
     scripts=['xpymon'],
+    license='GPL-3.0-only',
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Operating System :: POSIX :: Linux',
     ],
 )
